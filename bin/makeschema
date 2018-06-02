@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use FindBin '$Bin';
+
+use DBIx::Class::Schema::Loader qw[make_schema_at];
+
+make_schema_at(
+  'LondonPM::TechMeet', {
+    use_moose => 1,
+    dump_directory => "$Bin/../lib",
+    components => 'InflateColumn::DateTime',
+    custom_column_info => sub {
+      return { inflate_datetime => 1 } if $_[1] eq 'date';
+    },
+  }, [
+    'dbi:SQLite:techmeet.db',
+  ],
+);
+
