@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use FindBin '$Bin';
+use lib "$Bin/../lib";
+use LondonPM::TechMeet;
+
+my $sch = LondonPM::TechMeet->connect('dbi:SQLite:techmeet.db') or die;
+
+my $ven_rs = $sch->resultset('Venue');
+my $spe_rs = $sch->resultset('Speaker');
+my $tlk_rs = $sch->resultset('Talk');
+my $pre_rs = $sch->resultset('Presentation');
+
+my ($ven_db, $meet_db);
+while (<>) {
+  chomp;
+
+  if (/\d{4}/) {
+    my ($date, $venue) = split /\t/;
+    $ven_db = $ven_rs->find_or_create({ name => $venue });
+    $meet_db = $ven_db->add_to_meetings({ date => $date });
+  } else {
+    my ($talk, $speaker) = split /\t/;
+    my $tlk_db = $tlk_rs->find_or_create({ title => $talk });
+    my $pre_db = $pre_rs->create({ meeting_id => $meet_db->id, talk_id => $tlk_db->id });
+
+    for my $sp (split /,\s+/, $speaker) {
+      my $spe_db = $spe_rs->find_or_create({ name => $sp });
+      $spe_db->add_to_presentation_speakers({ presentation_id => $pre_db->id });
+    }
+  }
+}
